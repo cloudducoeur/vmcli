@@ -2,6 +2,26 @@
 
 `vmcli` is a terminal supervisor for VictoriaMetrics Cluster. The initial MVP reads configured nodes, checks `/metrics`, runs PromQL queries, and provides a keyboard-driven overview.
 
+## Installation
+
+Prerequisite: Go `1.24+`.
+
+From a local checkout:
+
+```sh
+cd vmcli
+go install .
+```
+
+This installs `vmcli` into `$(go env GOPATH)/bin` (or `GOBIN` if set).
+
+Alternative (local binary):
+
+```sh
+make build
+./bin/vmcli version
+```
+
 ## Quick start
 
 ```sh
