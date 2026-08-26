@@ -9,6 +9,7 @@ import (
 
 	"vmcli/internal/api"
 	"vmcli/internal/config"
+	"vmcli/internal/models"
 
 	"github.com/spf13/cobra"
 )
@@ -230,6 +231,35 @@ func TestPrintOutputToQueryTable(t *testing.T) {
 	}
 	if !strings.Contains(text, `"job":"consul"`) {
 		t.Fatalf("unexpected output: %s", text)
+	}
+}
+
+func TestPrintOutputToNodesTable(t *testing.T) {
+	prevOutput := output
+	output = "table"
+	t.Cleanup(func() { output = prevOutput })
+
+	nodes := []models.Node{
+		{
+			Component: models.Vmstorage,
+			URL:       "https://vmstorage1.internal.rdcnet.org:8482",
+			Status:    "UP",
+			Version:   "v1.100.0",
+			Uptime:    "7d",
+			Metrics:   map[string]float64{"vm_rows": 42},
+			CheckedAt: time.Date(2026, 8, 26, 16, 0, 0, 0, time.UTC),
+		},
+	}
+
+	var buf bytes.Buffer
+	if err := printOutputTo(&buf, nodes); err != nil {
+		t.Fatal(err)
+	}
+	text := buf.String()
+	for _, want := range []string{"COMPONENT", "NAME", "VERSION", "UPTIME", "METRICS", "CHECKED", "vmstorage1", "v1.100.0", "7d", "vm_rows=42", "16:00:00"} {
+		if !strings.Contains(text, want) {
+			t.Fatalf("expected %q in output:\n%s", want, text)
+		}
 	}
 }
 

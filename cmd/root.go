@@ -102,7 +102,7 @@ func runTUI(cmd *cobra.Command, args []string) error {
 	if err != nil {
 		return err
 	}
-	program := tea.NewProgram(tui.New(client, selected, file.RefreshInterval))
+	program := tea.NewProgram(tui.New(client, selected, clusterName, file.RefreshInterval), tea.WithAltScreen())
 	_, err = program.Run()
 	return err
 }
@@ -571,10 +571,19 @@ func printOutputTo(writer io.Writer, value any) error {
 		case []models.Node:
 			rows := make([][]string, 0, len(typed))
 			for _, node := range typed {
-				rows = append(rows, []string{string(node.Component), node.URL, renderNodeStatus(node.Status)})
+				rows = append(rows, []string{
+					string(node.Component),
+					nodeDisplayName(node.URL),
+					nodeHost(node.URL),
+					renderNodeStatus(node.Status),
+					nodeValueOrDash(node.Version),
+					nodeValueOrDash(node.Uptime),
+					nodeMetricsSummary(node.Metrics),
+					formatCheckedAt(node.CheckedAt),
+				})
 			}
 			_, err := io.WriteString(writer, renderStyledTable(
-				[]string{"COMPONENT", "HOST", "STATUS"},
+				[]string{"COMPONENT", "NAME", "HOST", "STATUS", "VERSION", "UPTIME", "METRICS", "CHECKED"},
 				rows,
 			))
 			return err
@@ -850,4 +859,55 @@ func renderNodeStatus(status string) string {
 	default:
 		return lipgloss.NewStyle().Foreground(lipgloss.Color("#A3A3A3")).Render("● " + status)
 	}
+}
+
+func nodeDisplayName(endpoint string) string {
+	host := nodeHost(endpoint)
+	if host == "" {
+		return "—"
+	}
+	if index := strings.Index(host, "."); index >= 0 {
+		return host[:index]
+	}
+	return host
+}
+
+func nodeHost(endpoint string) string {
+	value := strings.TrimSpace(endpoint)
+	value = strings.TrimPrefix(value, "http://")
+	value = strings.TrimPrefix(value, "https://")
+	if index := strings.Index(value, "/"); index >= 0 {
+		value = value[:index]
+	}
+	if value == "" {
+		return "—"
+	}
+	return value
+}
+
+func nodeValueOrDash(value string) string {
+	if strings.TrimSpace(value) == "" {
+		return "—"
+	}
+	return value
+}
+
+func nodeMetricsSummary(metrics map[string]float64) string {
+	if len(metrics) == 0 {
+		return "—"
+	}
+	keys := make([]string, 0, len(metrics))
+	for key := range metrics {
+		keys = append(keys, key)
+	}
+	sort.Strings(keys)
+	key := keys[0]
+	return fmt.Sprintf("%s=%s", key, strings.TrimRight(strings.TrimRight(fmt.Sprintf("%.6f", metrics[key]), "0"), "."))
+}
+
+func formatCheckedAt(ts time.Time) string {
+	if ts.IsZero() {
+		return "—"
+	}
+	return ts.Format("15:04:05")
 }
