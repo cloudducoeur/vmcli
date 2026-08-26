@@ -1,0 +1,18 @@
+refreshInterval: 5s
+clusters:
+  production:
+    vminsert:
+      - https://vminsert01.example.org:8480
+      - https://vminsert02.example.org:8480
+    vmselect:
+      - https://vmselect01.example.org:8481
+      - https://vmselect02.example.org:8481
+    vmstorage:
+      - https://vmstorage01.example.org:8482
+      - https://vmstorage02.example.org:8482
+    vmalert:
+      - https://vmalert01.example.org:8880
+      - https://vmalert02.example.org:8880
+    tenant:
+      accountID: 0
+      projectID: 0
